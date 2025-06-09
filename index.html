@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+  <meta charset="UTF-8">
+  <title>Happoemästaseen tulkintaa</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background-color: #eef1f5;
+    }
+
+    h1 {
+      text-align: center;
+      color: #1a4d6e;
+    }
+
+    .tabs {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .tabs button {
+      padding: 10px 20px;
+      margin: 5px;
+      font-size: 16px;
+      border: none;
+      background-color: #d0dce6;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+
+    .tabs button.active {
+      background-color: #1a4d6e;
+      color: white;
+    }
+
+    .tabcontent {
+      display: none;
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      max-width: 700px;
+      margin: auto;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+
+    input, select {
+      width: 100%;
+      padding: 8px;
+      margin: 5px 0 15px;
+    }
+
+    button.action {
+      background-color: #1a4d6e;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    button.action:hover {
+      background-color: #145076;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Happoemästaseen tulkintaa</h1>
+
+<div class="tabs">
+  <button class="active" onclick="avaaTab('opiskelu')">OPISKELU</button>
+  <button onclick="avaaTab('tulkinta')">TULKINTA</button>
+</div>
+
+<!-- OPISKELU TAB -->
+<div id="opiskelu" class="tabcontent" style="display: block;">
+  <p><strong>Harjoitus: Arvaa tulkinta ja arvioi SID-arvo</strong></p>
+  <p id="arvot">Klikkaa "Uusi potilas" saadaksesi satunnaiset labra-arvot:</p>
+  <button class="action" onclick="uusiPotilas()">Uusi potilas</button>
+
+  <label>Arviosi SID (Na⁺ - Cl⁻):</label>
+  <input type="number" id="opiskeluSid" placeholder="Esim. 38">
+
+  <label>Valitse tilan tulkinta:</label>
+  <select id="opiskeluVastaus">
+    <option value="">-- Valitse --</option>
+    <option value="met_asid">Metabolinen asidoosi</option>
+    <option value="met_alk">Metabolinen alkaloosi</option>
+    <option value="resp_asid">Respiratorinen asidoosi</option>
+    <option value="resp_alk">Respiratorinen alkaloosi</option>
+    <option value="norm">Normaali tila</option>
+  </select>
+
+  <button class="action" onclick="tarkistaOpiskelu()">Tarkista</button>
+  <p id="opiskeluTulos"></p>
+</div>
+
+<!-- TULKINTA TAB -->
+<div id="tulkinta" class="tabcontent">
+  <p><strong>Syötä potilaan labra-arvot:</strong></p>
+
+  <label>pH:</label>
+  <input type="number" step="0.01" id="ph">
+
+  <label>pCO₂ (kPa):</label>
+  <input type="number" step="0.1" id="pco2">
+
+  <label>HCO₃⁻ (mmol/l):</label>
+  <input type="number" step="1" id="hco3">
+
+  <label>Natrium Na⁺ (mmol/l):</label>
+  <input type="number" step="1" id="na">
+
+  <label>Kloridi Cl⁻ (mmol/l):</label>
+  <input type="number" step="1" id="cl">
+
+  <label>Albumiini (g/l):</label>
+  <input type="number" step="0.1" id="alb">
+
+  <label>Ketoaineet (mmol/l):</label>
+  <input type="number" step="0.1" id="keto">
+
+  <label>Arviosi SID:</label>
+  <input type="number" id="kayttajanSid">
+
+  <label>Valitse tulkinta:</label>
+  <select id="tulkintaVastaus">
+    <option value="">-- Valitse --</option>
+    <option value="met_asid">Metabolinen asidoosi</option>
+    <option value="met_alk">Metabolinen alkaloosi</option>
+    <option value="resp_asid">Respiratorinen asidoosi</option>
+    <option value="resp_alk">Respiratorinen alkaloosi</option>
+    <option value="norm">Normaali tila</option>
+  </select>
+
+  <button class="action" onclick="tarkistaTulkinta()">Tarkista</button>
+  <p id="tulkintaTulos"></p>
+</div>
+
+<script>
+  function avaaTab(tabName) {
+    const tabs = document.getElementsByClassName("tabcontent");
+    for (let tab of tabs) tab.style.display = "none";
+
+    const buttons = document.querySelectorAll(".tabs button");
+    buttons.forEach(btn => btn.classList.remove("active"));
+
+    document.getElementById(tabName).style.display = "block";
+    event.currentTarget.classList.add("active");
+  }
+
+  const tekstit = {
+    met_asid: "Metabolinen asidoosi",
+    met_alk: "Metabolinen alkaloosi",
+    resp_asid: "Respiratorinen asidoosi",
+    resp_alk: "Respiratorinen alkaloosi",
+    norm: "Normaali tila"
+  };
+
+  // OPISKELU
+  let oikeaSID, oikeaDiag;
+
+  function uusiPotilas() {
+    const ph = (Math.random() * 0.6 + 7.2).toFixed(2);
+    const pco2 = (Math.random() * 2.5 + 4.5).toFixed(1);
+    const hco3 = Math.floor(Math.random() * 10 + 18);
+    const na = Math.floor(Math.random() * 6 + 138);
+    const cl = Math.floor(Math.random() * 10 + 98);
+    const alb = (Math.random() * 10 + 30).toFixed(1);
+    const keto = (Math.random() * 3).toFixed(1);
+    const sid = na - cl;
+
+    oikeaSID = sid;
+
+    if (ph < 7.35 && hco3 < 22 && (sid < 35 || alb < 30 || keto > 1.5)) {
+      oikeaDiag = "met_asid";
+    } else if (ph > 7.45 && hco3 > 26 && sid > 45) {
+      oikeaDiag = "met_alk";
+    } else if (ph < 7.35 && pco2 > 6.0) {
+      oikeaDiag = "resp_asid";
+    } else if (ph > 7.45 && pco2 < 4.4) {
+      oikeaDiag = "resp_alk";
+    } else {
+      oikeaDiag = "norm";
+    }
+
+    document.getElementById("arvot").innerText =
+      `pH: ${ph}, pCO₂: ${pco2} kPa, HCO₃⁻: ${hco3} mmol/l\nNa⁺: ${na}, Cl⁻: ${cl}, Albumiini: ${alb}, Ketoaineet: ${keto}`;
+    document.getElementById("opiskeluTulos").innerText = "";
+    document.getElementById("opiskeluVastaus").value = "";
+    document.getElementById("opiskeluSid").value = "";
+  }
+
+  function tarkistaOpiskelu() {
+    const v = document.getElementById("opiskeluVastaus").value;
+    const sid = parseFloat(document.getElementById("opiskeluSid").value);
+    let tulos = "";
+
+    if (v === oikeaDiag) {
+      tulos = `<span style="color:green;">✅ Oikein! (${tekstit[oikeaDiag]})</span>`;
+    } else {
+      tulos = `<span style="color:red;">❌ Väärin. Oikea vastaus: ${tekstit[oikeaDiag]}</span>`;
+    }
+
+    if (!isNaN(sid)) {
+      if (Math.abs(sid - oikeaSID) <= 1) {
+        tulos += `<br><span style="color:green;">✅ SID-arviosi (${sid}) on oikein (oikea: ${oikeaSID})</span>`;
+      } else {
+        tulos += `<br><span style="color:red;">❌ SID-arviosi (${sid}) on väärin. Oikea: ${oikeaSID}</span>`;
+      }
+    }
+
+    document.getElementById("opiskeluTulos").innerHTML = tulos;
+  }
+
+  // TULKINTA
+  function tarkistaTulkinta() {
+    const ph = parseFloat(document.getElementById("ph").value);
+    const pco2 = parseFloat(document.getElementById("pco2").value);
+    const hco3 = parseFloat(document.getElementById("hco3").value);
+    const na = parseFloat(document.getElementById("na").value);
+    const cl = parseFloat(document.getElementById("cl").value);
+    const alb = parseFloat(document.getElementById("alb").value);
+    const keto = parseFloat(document.getElementById("keto").value);
+    const arvio = document.getElementById("tulkintaVastaus").value;
+    const sid = na - cl;
+    const syotettySid = parseFloat(document.getElementById("kayttajanSid").value);
+
+    let diag = "norm";
+    if (ph < 7.35 && hco3 < 22 && (sid < 35 || alb < 30 || keto > 1.5)) diag = "met_asid";
+    else if (ph > 7.45 && hco3 > 26 && sid > 45) diag = "met_alk";
+    else if (ph < 7.35 && pco2 > 6.0) diag = "resp_asid";
+    else if (ph > 7.45 && pco2 < 4.4) diag = "resp_alk";
+
+    let tulos = (arvio === diag)
+      ? `<span style="color:green;">✅ Oikein! (${tekstit[diag]})</span>`
+      : `<span style="color:red;">❌ Väärin. Oikea: ${tekstit[diag]}</span>`;
+
+    if (!isNaN(syotettySid)) {
+      if (Math.abs(syotettySid - sid) <= 1) {
+        tulos += `<br><span style="color:green;">✅ SID-arviosi (${syotettySid}) on oikein (oikea: ${sid})</span>`;
+      } else {
+        tulos += `<br><span style="color:red;">❌ SID-arviosi (${syotettySid}) on väärin. Oikea: ${sid}</span>`;
+      }
+    }
+
+    document.getElementById("tulkintaTulos").innerHTML = tulos;
+  }
+</script>
+
+</body>
+</html>
